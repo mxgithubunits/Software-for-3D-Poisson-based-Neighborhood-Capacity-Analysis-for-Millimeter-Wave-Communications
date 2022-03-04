@@ -1,0 +1,9 @@
+% ***********************************************************************
+% **                 Developed by MASSIMILIANO COMISSO                 **
+% **       Dept. of Engineering and Architecture, Univ. of Trieste     **
+% **                          March, 04, 2022                          **
+% ***********************************************************************
+
+function y=Bkja(k,j,a,lb)
+
+    y=gamma(j/3+k)*hypergeom(j/3+k,[2^j/3,2^(j+1)/3-Krond(j,2)],-a^3/(36*pi*lb));
