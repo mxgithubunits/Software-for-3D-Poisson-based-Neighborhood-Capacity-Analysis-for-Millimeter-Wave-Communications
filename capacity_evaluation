@@ -1,0 +1,89 @@
+% ***********************************************************************
+% **                 Developed by MASSIMILIANO COMISSO                 **
+% **       Dept. of Engineering and Architecture, Univ. of Trieste     **
+% **                          March, 04, 2022                          **
+% ***********************************************************************
+
+clear all
+warning off
+
+% PARAMETERS
+mod_=1;                                % 1:Shannon, 2: QPSK
+ch_=1;                                 % 1:28 GHz, 2:73 GHz
+if ch_==1
+    al_=10.^([61.4 72.0]/10);          % alpha parameters for path-loss (LOS, NLOS in 28 GHz channel)
+    be_=[2 2.92];                      % beta parameters for path-loss (LOS, NLOS in 28 GHz channel)
+    si_=0.1*log(10)*[5.8 8.7];         % standard deviations for lognormal shadowing (LOS, NLOS in 28 GHz channel)
+else
+    al_=10.^([69.8 82.7]/10);          % alpha parameters for path-loss (LOS, NLOS in 73 GHz channel)
+    be_=[2 2.69];                      % beta parameters for path-loss (LOS, NLOS in 73 GHz channel)
+    si_=0.1*log(10)*[5.8 7.7];         % standard deviations for lognormal shadowing (LOS, NLOS in 73 GHz channel)
+end
+ba_err=0;                              % 0:no beam alignment error, 1: beam alignment error
+if ba_err==0
+    Dt_=1;                             % Delta parameter in absence of beam pointing error
+else
+    Dt_=erf(3/(2*sqrt(2)));            % Delta parameter in presence of beam pointing error
+end
+for l=0:2
+    D(l+1)=(1+Krond(l,1))*Dt_^l*(1-Dt_+Krond(l,2))^(2-l); % D_l parameters
+end
+PS=0.1;                                % source transmission power [W]
+GM_dB=10;                              % maximum transmitting/receiving antenna gain [dB]
+GM=10^(GM_dB/10);                      % maximum transmitting/receiving antenna gain
+Gb_dB=0;                               % backlobe transmitting/receiving antenna gain [dB]
+Gb=10^(Gb_dB/10);                      % backlobe transmitting/receiving antenna gain 
+Rc=100;                                % cell radius [m]
+a_out=1/30;                            % outage parameter 1 for link state probabilities [1/m]
+b_out=5.2;                             % outage parameter 2 for link state probabilities
+a_los=1/67.1;                          % LOS parameter for link state probabilities [1/m]
+s_n=3.98e-21*1e9*10;                   % noise power
+vs_i=[0.0102,0.6746,0.9308];           % constants for QPSK approximation              
+u=10.^([-20:0.05:20]);                 % SNR domain discretization (non-uniform)
+Lu=length(u);                          % number of samples
+Udiff=[u(1) diff(u)];                  % steps (non-uniform)
+k_fin=3;                               % maximum neighbour order
+lb=1/(Rc^2*pi);                        % node desnity [1/m^2]
+om_=PS./al_;                           % omega_h parameters
+ph_=4*pi*lb*om_.^(3./be_)/3;           % varphi_h parameters
+eps_=exp(sqrt(3)*si_);                 % eps_h parameters
+
+% CAPACITY EVALUATION
+for k=1:k_fin
+    S=zeros(2,k_fin);
+    for j=0:2
+        S(1,k)=S(1,k)+Aja(j,a_out,lb)*Bkja(k,j,a_out,lb);
+    end
+    f(1,k)=max(1-exp(b_out)*S(1,k)/gamma(k),0);
+    for j=0:2
+        S(2,k)=S(2,k)+Aja(j,a_los,lb)*Bkja(k,j,a_los,lb);
+    end
+    f(2,k)=S(2,k)/gamma(k);
+    f(3,k)=1-f(2,k)-f(1,k);
+    Sum_p=zeros(1,Lu);
+    for l=0:2
+        for h=1:2                
+            for n=-1:1
+                A=2/(3*4^abs(n));
+                mu_=ph_(h)*(GM^l*Gb^(2-l)*eps_(h)^n/s_n)^(3/be_(h));
+                Sum_p=Sum_p+f(h+1,k)*A*D(l+1)*gammainc(mu_*u.^(-3/be_(h)),k,'upper');
+            end
+        end
+    end
+    if mod_==1
+        F(k,:)=(1-Sum_p+f(1,k)).*log2(1+u);
+    else
+        F(k,:)=2*(1-Sum_p+f(1,k)).*subplus(1-exp(vs(1)-vs(2)*u.^vs(3)));
+    end           
+end
+   
+% FIGURE
+figure(1)
+set(gcf,'Color',[1,1,1])
+for k=1:k_fin
+    semilogx(u,F(k,:),'k')
+    hold on
+end
+axis([10^(-5),10^5,0,8])
+grid on
+box on
