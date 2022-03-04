@@ -1,0 +1,13 @@
+% ***********************************************************************
+% **                 Developed by MASSIMILIANO COMISSO                 **
+% **       Dept. of Engineering and Architecture, Univ. of Trieste     **
+% **                          March, 04, 2022                          **
+% ***********************************************************************
+
+function y=Krond(i,j)
+
+if i==j
+    y=1;
+else
+    y=0;
+end
