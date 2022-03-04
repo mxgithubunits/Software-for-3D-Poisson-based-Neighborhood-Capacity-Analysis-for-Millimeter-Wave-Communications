@@ -1,0 +1,9 @@
+% ***********************************************************************
+% **                 Developed by MASSIMILIANO COMISSO                 **
+% **       Dept. of Engineering and Architecture, Univ. of Trieste     **
+% **                          March, 04, 2022                          **
+% ***********************************************************************
+
+function y=Aja(j,a,lb)
+
+    y=(-a)^j/2^Krond(j,2)*(3/(4*pi*lb))^(j/3);
